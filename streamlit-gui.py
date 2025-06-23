@@ -1,18 +1,14 @@
-# gui.py
+# streamlit-gui.py
+
 import streamlit as st
 import numpy as np
 import pickle
 import os
 import scipy.io.wavfile as wav
 from manualSVM import extract_features
+from settings import DEMO_FILE
 
 st.set_page_config(page_title="Spoken Digit Detection", layout="centered")
-
-IS_CLOUD = os.environ.get("IS_STREAMLIT_CLOUD", "0") == "1"
-
-if not IS_CLOUD:
-    from settings import WAVE_OUTPUT_FILE, DURATION
-    from src.sound import record
 
 # --------------------------
 # Load model
@@ -41,30 +37,26 @@ def preprocess_features(features):
 # UI
 # --------------------------
 st.title("Real-Time Spoken Digit Detection")
-st.caption("Free Spoken Digit Detection using Support Vector Machine (SVM) and MFCC + Frequency and Time Domain Feature Extraction")
+st.caption("Free Spoken Digit Detection using SVM and MFCC + Frequency/Time Domain Features")
 st.divider()
 
-# Record section
-st.subheader("🎤 Record and Predict")
-
-if not IS_CLOUD:
-    if st.button("🔴 Record"):
-        with st.spinner(f"Recording for {DURATION} seconds..."):
-            record()
-        st.success("Recording completed!")
-
-    if os.path.exists(WAVE_OUTPUT_FILE):
-        st.audio(WAVE_OUTPUT_FILE, format="audio/wav")
-        if st.button("📊 Predict from Recording"):
-            sr, signal = wav.read(WAVE_OUTPUT_FILE)
+# --------------------------
+# Demo
+# --------------------------
+st.subheader("🔊 Demo")
+if os.path.exists(DEMO_FILE):
+    st.audio(DEMO_FILE, format="audio/wav")
+    if st.button("📊 Predict from Recording"):
+        if os.path.exists(DEMO_FILE):
+            sr, signal = wav.read(DEMO_FILE)
             features = extract_features(signal.flatten(), sr)
             features = preprocess_features(features)
             prediction = model.predict([features])[0]
             st.success(f"**Predicted Digit (from recording):** {label_names[prediction]}")
-else:
-    st.info("🎤 Recording functionality is only available when running locally.")
 
+# --------------------------
 # Upload section
+# --------------------------
 st.divider()
 st.subheader("📁 Upload File and Predict")
 
@@ -78,7 +70,9 @@ if uploaded_file is not None:
         prediction = model.predict([features])[0]
         st.success(f"**Predicted Digit (from file):** {label_names[prediction]}")
 
+# --------------------------
 # Model stats
+# --------------------------
 st.divider()
 st.subheader("📈 Model Performance Summary")
 
