@@ -4,11 +4,15 @@ import numpy as np
 import pickle
 import os
 import scipy.io.wavfile as wav
-from settings import WAVE_OUTPUT_FILE, DURATION
-from src.sound import record
 from manualSVM import extract_features
 
 st.set_page_config(page_title="Spoken Digit Detection", layout="centered")
+
+IS_CLOUD = os.environ.get("IS_STREAMLIT_CLOUD", "0") == "1"
+
+if not IS_CLOUD:
+    from settings import WAVE_OUTPUT_FILE, DURATION
+    from src.sound import record
 
 # --------------------------
 # Load model
@@ -37,29 +41,28 @@ def preprocess_features(features):
 # UI
 # --------------------------
 st.title("Real-Time Spoken Digit Detection")
-st.caption("Free Spoken Digit Detection using Suport Vector Machine (SVM) and Mel-Frequency Cepstral Coefficients (MFCC) + Frequency and Time Domain Feature Extraction")
+st.caption("Free Spoken Digit Detection using Support Vector Machine (SVM) and MFCC + Frequency and Time Domain Feature Extraction")
 st.divider()
 
 # Record section
 st.subheader("🎤 Record and Predict")
 
-if st.button("🔴 Record"):
-    with st.spinner(f"Recording for {DURATION} seconds..."):
-        record()
-    st.success("Recording completed!")
+if not IS_CLOUD:
+    if st.button("🔴 Record"):
+        with st.spinner(f"Recording for {DURATION} seconds..."):
+            record()
+        st.success("Recording completed!")
 
-if os.path.exists(WAVE_OUTPUT_FILE):
-    st.audio(WAVE_OUTPUT_FILE, format="audio/wav")
-    if st.button("📊 Predict from Recording"):
-        if os.path.exists(WAVE_OUTPUT_FILE):
+    if os.path.exists(WAVE_OUTPUT_FILE):
+        st.audio(WAVE_OUTPUT_FILE, format="audio/wav")
+        if st.button("📊 Predict from Recording"):
             sr, signal = wav.read(WAVE_OUTPUT_FILE)
             features = extract_features(signal.flatten(), sr)
             features = preprocess_features(features)
             prediction = model.predict([features])[0]
             st.success(f"**Predicted Digit (from recording):** {label_names[prediction]}")
-        else:
-            st.warning("Please record audio before predicting.")
-
+else:
+    st.info("🎤 Recording functionality is only available when running locally.")
 
 # Upload section
 st.divider()
