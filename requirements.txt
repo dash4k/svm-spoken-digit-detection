@@ -1,0 +1,7 @@
+streamlit
+sounddevice
+scipy
+numpy
+pandas
+matplotlib
+seaborn
